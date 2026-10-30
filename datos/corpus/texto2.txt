@@ -1,0 +1,4 @@
+hadoop reparte el trabajo entre muchas computadoras
+mapreduce tiene dos fases la fase map y la fase reduce
+el map lee los datos y emite pares de clave y valor
+el reduce junta todos los valores de una misma clave

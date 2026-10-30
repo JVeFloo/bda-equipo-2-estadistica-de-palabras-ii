@@ -1,0 +1,4 @@
+el dato es el nuevo petroleo
+los datos crudos no sirven de mucho
+hay que limpiar los datos antes de usarlos
+un modelo bueno con datos malos sigue siendo un modelo malo

@@ -1,0 +1,4 @@
+la desviacion estandar mide que tan dispersos estan los datos
+si la desviacion es chica las palabras miden casi lo mismo
+si la desviacion es grande hay palabras muy cortas y muy largas
+el promedio solo no alcanza para describir un conjunto de datos

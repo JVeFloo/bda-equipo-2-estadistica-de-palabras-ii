@@ -1,0 +1,9 @@
+# Salidas y logs generados por Hadoop: no se suben al repositorio
+salida-*/
+logs/
+*.log
+datos/muchos/
+
+# Basura del sistema
+.DS_Store
+*~

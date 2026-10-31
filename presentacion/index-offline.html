@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Equipo 2 — Estadística de palabras II</title>
+
+<link rel="stylesheet" href="vendor/fonts.css">
+
+<link rel="stylesheet" href="vendor/reveal.min.css">
+
+<style>
+/* ===================================================================
+   TEMA "GREENBAR" — papel continuo de impresora de línea
+   =================================================================== */
+:root{
+  --paper:      #F6F7F1;
+  --bar:        #D8E5CF;
+  --bar-soft:   #E9EFE3;
+  --hole:       #E0E5D9;
+  --ink:        #16231C;
+  --ink-2:      #44564A;
+  --ink-3:      #78887E;
+  --rule:       #BCCAB2;
+  --rule-soft:  #DCE4D5;
+  --stamp:      #A8382A;
+  --stamp-wash: #F2E2DE;
+
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --cond: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+}
+
+html, body { background: var(--paper); }
+
+.reveal {
+  font-family: var(--sans);
+  font-size: 21px;
+  font-weight: 400;
+  color: var(--ink);
+  letter-spacing: 0;
+}
+.reveal ::selection { background: var(--stamp-wash); }
+
+/* --- La hoja: cada slide es una página de papel continuo ----------- */
+.reveal .slides         { text-align: left; }
+.reveal .slides section {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 54px 96px 60px 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+}
+.reveal .slides section > * { flex: 0 0 auto; }
+.reveal .slides section.sheet--top   { justify-content: flex-start; }
+.reveal .slides section.sheet--cover { justify-content: center; }
+.sheet--cover .jobline {
+  position: absolute; top: 54px; left: 96px; right: 96px;
+}
+
+/* Perforaciones laterales del papel continuo.
+   Van en ::before/::after del propio section para que también
+   se impriman en TODAS las páginas al exportar a PDF. */
+.reveal .slides section::before,
+.reveal .slides section::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 40px;
+  pointer-events: none;
+  background-image: radial-gradient(circle at center, var(--hole) 0 5px, transparent 5.5px);
+  background-size: 40px 46px;
+  background-repeat: repeat-y;
+}
+.reveal .slides section::before { left: 0;  border-right: 1px dashed var(--rule-soft); }
+.reveal .slides section::after  { right: 0; border-left:  1px dashed var(--rule-soft); }
+
+/* --- Tipografía ---------------------------------------------------- */
+.reveal h1, .reveal h2, .reveal h3 {
+  font-family: var(--cond);
+  color: var(--ink);
+  text-transform: none;
+  margin: 0;
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  text-shadow: none;
+}
+.reveal h1 { font-weight: 700; font-size: 78px; }
+.reveal h2 { font-weight: 600; font-size: 46px; margin-bottom: 26px; }
+.reveal h3 { font-weight: 600; font-size: 28px; }
+
+.reveal p  { margin: 0 0 18px 0; line-height: 1.5; max-width: 60ch; }
+.reveal p.lead { font-size: 27px; line-height: 1.42; color: var(--ink); max-width: 46ch; }
+.reveal .dim   { color: var(--ink-2); }
+.reveal strong { font-weight: 600; color: var(--ink); }
+
+.reveal ul { margin: 0; display: block; }
+.reveal li { margin: 0 0 14px 0; line-height: 1.45; }
+
+/* Encabezado de listado de impresora: mayúsculas de línea-impresora.
+   Autenticidad del formato, no etiqueta decorativa. */
+.jobline {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink-3);
+  white-space: pre;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 10px;
+  margin-bottom: 0;
+}
+
+/* --- Bloque de listado con bandas verdes --------------------------- */
+.print {
+  font-family: var(--mono);
+  font-size: 22px;
+  line-height: 1;
+  border: 1px solid var(--rule);
+  display: inline-block;
+  min-width: 300px;
+}
+.print .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 48px;
+  padding: 13px 22px;
+  background: var(--paper);
+}
+.print .row:nth-child(odd) { background: var(--bar); }
+.print .row .k { color: var(--ink-2); }
+.print .row .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+.print--lg { font-size: 30px; }
+.print--lg .row { padding: 18px 28px; }
+
+/* --- Anotación a mano / sello -------------------------------------- */
+.stamp {
+  font-family: var(--mono);
+  color: var(--stamp);
+  font-size: 19px;
+  line-height: 1.45;
+}
+.stamp-box {
+  display: inline-block;
+  border: 2px solid var(--stamp);
+  color: var(--stamp);
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: 20px;
+  padding: 5px 14px;
+  transform: rotate(-2.2deg);
+}
+.arrow { color: var(--stamp); }
+
+/* --- Rejillas ------------------------------------------------------ */
+.two   { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
+.two--wide { grid-template-columns: 1.15fr 1fr; }
+.split-rule { border-left: 1px solid var(--rule); padding-left: 56px; }
+
+/* --- Código -------------------------------------------------------- */
+.reveal pre {
+  box-shadow: none;
+  width: 100%;
+  margin: 0 0 18px 0;
+  font-size: 19px;
+}
+.reveal pre code {
+  /* Reveal 5 no define esto: normalmente viene del tema de resaltado,
+     que aqui no cargamos para quedarnos con la paleta del papel. */
+  display: block;
+  font-family: var(--mono);
+  background: #FFFFFF;
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--ink-2);
+  color: var(--ink);
+  padding: 16px 20px;
+  line-height: 1.5;
+  max-height: none;
+  border-radius: 0;
+}
+.reveal pre.pre--sm { font-size: 16px; }
+.reveal code { font-family: var(--mono); }
+.reveal p code, .reveal li code {
+  background: var(--bar-soft);
+  padding: 1px 5px;
+  font-size: 0.92em;
+}
+/* Resaltado de sintaxis en la paleta del papel */
+.hljs-built_in, .hljs-keyword, .hljs-title { color: var(--ink); font-weight: 600; }
+.hljs-string, .hljs-attr                   { color: var(--stamp); }
+.hljs-comment                              { color: var(--ink-3); font-style: italic; }
+.hljs-number, .hljs-literal                { color: var(--ink-2); font-weight: 600; }
+
+/* --- Numeración de página en el margen ----------------------------- */
+.reveal .slide-number {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: none;
+  color: var(--ink-3);
+  right: 54px;
+  bottom: 20px;
+  padding: 0;
+}
+
+/* --- Fragments: que no "salten", solo aparezcan -------------------- */
+.reveal .fragment.fade-in-then-semi-out.visible { opacity: 1; }
+
+/* --- Gráfica de longitudes de palabra ------------------------------ */
+.lenchart { position: relative; }
+.lenrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 17px;
+  margin-bottom: 9px;
+}
+.lenrow .w { color: var(--ink-2); width: 86px; flex: none; }
+.lenrow .n { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.lenbar { height: 15px; background: var(--ink-2); flex: none; }
+.medialine {
+  position: absolute;
+  left: 186px;
+  top: -8px;
+  height: 140px;
+  border-left: 1px dashed var(--stamp);
+}
+.lenfoot {
+  font-family: var(--mono);
+  font-size: 17px;
+  color: var(--ink-2);
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+/* --- Diagrama de flujo Map / Shuffle / Reduce ---------------------- */
+.flow-row {
+  display: grid;
+  grid-template-columns: 128px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.flow-label {
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: 23px;
+  padding: 7px 14px;
+  background: var(--bar);
+  text-align: center;
+}
+.flow-body {
+  font-family: var(--mono);
+  font-size: 16.5px;
+  line-height: 1.75;
+  color: var(--ink);
+  padding-top: 5px;
+}
+.flow-body .d  { color: var(--ink-3); }
+.flow-body code.big { font-size: 23px; background: none; padding: 0; }
+.flow-arrow {
+  font-size: 19px;
+  color: var(--ink-3);
+  margin: 7px 0 7px 56px;
+  line-height: 1;
+}
+
+
+/* --- Tabla comparativa --------------------------------------------- */
+.cmp { border: 1px solid var(--rule); font-family: var(--mono); font-size: 19px; }
+.cmp .r { display: grid; grid-template-columns: 180px 1fr 1fr; }
+.cmp .r > div { padding: 14px 22px; border-right: 1px solid var(--rule-soft); }
+.cmp .r > div:last-child { border-right: 0; }
+.cmp .r .lbl { color: var(--ink-3); }
+.cmp .r--bar { background: var(--bar-soft); }
+.cmp .hd {
+  font-family: var(--cond); font-weight: 700; font-size: 21px;
+  border-bottom: 1px solid var(--rule);
+}
+.cmp .r--hit {
+  background: var(--stamp-wash);
+  color: var(--stamp);
+  font-weight: 600;
+  border-top: 1px solid var(--stamp);
+}
+.cmp .r--hit .lbl { color: var(--stamp); }
+
+/* --- Archivos sueltos vs archivos en una caja ---------------------- */
+.files { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; }
+.file  { height: 19px; border: 1px solid var(--ink-2); background: var(--paper); }
+.crate { border: 2px solid var(--ink); padding: 13px; }
+.crate .files { gap: 4px; }
+.crate .file { border-color: var(--rule); }
+.crate-label {
+  margin-top: 20px; padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono); font-size: 18px; line-height: 1.6;
+}
+
+/* --- Cifra grande --------------------------------------------------- */
+.bignum { display: flex; align-items: center; gap: 46px; }
+.bignum-v {
+  font-family: var(--cond); font-weight: 700; font-size: 72px;
+  line-height: 1; font-variant-numeric: tabular-nums;
+}
+.bignum-k { font-family: var(--mono); font-size: 17px; color: var(--ink-2); margin-top: 10px; }
+.bignum-op { font-size: 40px; color: var(--ink-3); }
+
+
+/* --- Etiqueta de terminal ------------------------------------------ */
+.term {
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal .slides section { transition: none !important; }
+}
+</style>
+</head>
+
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============================================================= 1 -->
+<section class="sheet--cover">
+  <div class="jobline">UPQ / IDIA 224      MANEJO MASIVO DE DATOS      EP.02.02      29-OCT-2026</div>
+
+  <div class="two two--wide" style="align-items:center;">
+    <div>
+      <h1>Estadística<br>de palabras II</h1>
+      <div style="font-family:var(--mono); font-size:21px; color:var(--ink-2); margin-top:26px; line-height:1.7;">
+        wordstandarddeviation<br>multifilewc
+      </div>
+      <div style="margin-top:46px; font-size:19px; color:var(--ink-2); line-height:1.6;">
+        Equipo 2 — Jeshua Vera Flores, Andrea Isabel Vega Martínez<br>
+        Prof. José Javier Moya Moya
+      </div>
+    </div>
+
+    <div>
+      <div class="print print--lg">
+        <div class="row"><span class="k">count</span><span class="v">116</span></div>
+        <div class="row"><span class="k">length</span><span class="v">513</span></div>
+        <div class="row"><span class="k">square</span><span class="v">2883</span></div>
+      </div>
+      <div class="stamp" style="margin-top:22px;">
+        Tres renglones.<br>
+        Eso es <em>todo</em> lo que<br>
+        devuelve el trabajo.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= 2 -->
+<section>
+  <h2>Nos tocaron dos ejemplos que enseñan cosas distintas</h2>
+
+  <div class="two" style="margin-top:14px;">
+    <div>
+      <div style="font-family:var(--mono); font-size:23px; font-weight:600; margin-bottom:14px;">wordstandarddeviation</div>
+      <p class="dim" style="font-size:20px;">Mide qué tan dispares son las longitudes de las palabras de un texto.</p>
+      <p style="margin-top:24px;"><strong>La lección:</strong> qué cosas puede calcular MapReduce… y cuáles no, aunque te las devuelva.</p>
+    </div>
+    <div class="split-rule">
+      <div style="font-family:var(--mono); font-size:23px; font-weight:600; margin-bottom:14px;">multifilewc</div>
+      <p class="dim" style="font-size:20px;">Cuenta palabras. Exactamente igual que el <code>wordcount</code> que ya vieron.</p>
+      <p style="margin-top:24px;"><strong>La lección:</strong> cómo Hadoop reparte el trabajo, y por qué eso importa más que el cálculo.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:52px; border-top:1px solid var(--rule); padding-top:22px;">
+    <p class="dim" style="max-width:none; margin:0;">Los dos corren sobre el contenedor de la práctica, en modo standalone, sin HDFS ni YARN.</p>
+  </div>
+</section>
+
+<!-- ============================================================= 3 -->
+<section>
+  <h2>El molde que ya conocen</h2>
+
+  <p class="lead dim" style="margin-bottom:38px;">Todo ejemplo de MapReduce cabe en tres casillas. Las de <code>wordcount</code>:</p>
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:0; border:1px solid var(--rule);">
+    <div style="padding:26px 28px; border-right:1px solid var(--rule); background:var(--bar-soft);">
+      <div style="font-family:var(--cond); font-weight:700; font-size:24px; margin-bottom:12px;">Map</div>
+      <div style="font-family:var(--mono); font-size:17px; color:var(--ink-2); line-height:1.6;">"la fase map"<br>↓<br>(la,&nbsp;1) (fase,&nbsp;1) (map,&nbsp;1)</div>
+    </div>
+    <div style="padding:26px 28px; border-right:1px solid var(--rule);">
+      <div style="font-family:var(--cond); font-weight:700; font-size:24px; margin-bottom:12px;">Shuffle</div>
+      <div style="font-family:var(--mono); font-size:17px; color:var(--ink-2); line-height:1.6;">Hadoop agrupa<br>por clave<br>la&nbsp;→&nbsp;[1,&nbsp;1]</div>
+    </div>
+    <div style="padding:26px 28px; background:var(--bar-soft);">
+      <div style="font-family:var(--cond); font-weight:700; font-size:24px; margin-bottom:12px;">Reduce</div>
+      <div style="font-family:var(--mono); font-size:17px; color:var(--ink-2); line-height:1.6;">suma la lista<br>↓<br>la&nbsp;&nbsp;&nbsp;2</div>
+    </div>
+  </div>
+
+  <p class="fragment" style="margin-top:42px; max-width:none;">
+    <span class="stamp-box">Guárdense esto</span>
+    <span style="display:inline-block; margin-left:20px; vertical-align:middle;">El Reduce <strong>solo sabe juntar una lista en un número</strong>. Nada más. Con eso basta para los dos ejemplos.</span>
+  </p>
+</section>
+
+<!-- ============================================================= 4 -->
+<section>
+  <h2>Qué tan parejas son las palabras</h2>
+  <p class="lead dim" style="margin-bottom:34px;">Cuenta las letras de cada palabra y mide qué tan dispersas están esas longitudes. El promedio no basta: estos dos renglones tienen el mismo promedio.</p>
+
+  <div class="two" style="gap:70px;">
+    <div class="lenchart">
+      <div class="medialine"></div>
+      <div class="lenrow"><span class="w">casa</span><span class="lenbar" style="width:88px"></span><span class="n">4</span></div>
+      <div class="lenrow"><span class="w">mesa</span><span class="lenbar" style="width:88px"></span><span class="n">4</span></div>
+      <div class="lenrow"><span class="w">gato</span><span class="lenbar" style="width:88px"></span><span class="n">4</span></div>
+      <div class="lenrow"><span class="w">pelo</span><span class="lenbar" style="width:88px"></span><span class="n">4</span></div>
+      <div class="lenfoot">promedio 4 &nbsp;&nbsp; desviación <strong>0</strong></div>
+    </div>
+
+    <div class="lenchart">
+      <div class="medialine"></div>
+      <div class="lenrow"><span class="w">el</span><span class="lenbar" style="width:44px"></span><span class="n">2</span></div>
+      <div class="lenrow"><span class="w">un</span><span class="lenbar" style="width:44px"></span><span class="n">2</span></div>
+      <div class="lenrow"><span class="w">camino</span><span class="lenbar" style="width:132px"></span><span class="n">6</span></div>
+      <div class="lenrow"><span class="w">bosque</span><span class="lenbar" style="width:132px"></span><span class="n">6</span></div>
+      <div class="lenfoot">promedio 4 &nbsp;&nbsp; desviación <strong>2</strong></div>
+    </div>
+  </div>
+
+  <p style="margin-top:44px; max-width:none;">La desviación chica dice que casi todas las palabras miden lo mismo. La grande, que hay cortas mezcladas con largas.</p>
+</section>
+
+<!-- ============================================================= 5 -->
+<section>
+  <h2>Para qué sirve eso en la vida real</h2>
+
+  <div class="two" style="margin-top:8px;">
+    <div>
+      <h3 style="margin-bottom:14px;">Medir qué tan difícil es un texto</h3>
+      <p class="dim" style="font-size:20px;">La longitud de las palabras es una de las señales que usan los índices de legibilidad, como el de Fernández-Huerta para el español. Editoriales, periódicos y apps educativas la usan para etiquetar un texto como fácil o difícil.</p>
+    </div>
+    <div class="split-rule">
+      <h3 style="margin-bottom:14px;">Detectar texto basura</h3>
+      <p class="dim" style="font-size:20px;">El texto escrito por una persona tiene una distribución de longitudes bastante estable. Cuando esa distribución se sale de rango, suele ser spam, relleno para SEO o salida de un bot.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:50px; border-top:1px solid var(--rule); padding-top:24px;">
+    <p style="max-width:none; margin:0;"><strong>¿Y por qué MapReduce?</strong> Con un texto cabe en Python. Con <strong>50 millones de artículos</strong> no cabe en una computadora, y ahí es donde tiene sentido repartir el conteo entre muchas.</p>
+  </div>
+</section>
+
+<!-- ============================================================= 6 -->
+<section>
+  <h2>El Mapper emite tres pares por cada palabra</h2>
+
+  <p class="dim" style="margin-bottom:30px;">No uno. Tres. Y siempre las mismas tres claves, sin importar cuál sea la palabra.</p>
+
+  <div class="two two--wide" style="align-items:center;">
+    <div>
+      <div style="font-family:var(--mono); font-size:26px; margin-bottom:26px;">
+        <span style="background:var(--bar); padding:4px 10px;">dato</span>
+        <span style="color:var(--ink-3); font-size:19px; margin-left:12px;">4 letras</span>
+      </div>
+      <div style="font-family:var(--mono); font-size:19px; color:var(--ink-3); margin-bottom:10px;">emite</div>
+      <div class="print">
+        <div class="row"><span class="k">length</span><span class="v">4</span></div>
+        <div class="row"><span class="k">square</span><span class="v">16</span></div>
+        <div class="row"><span class="k">count</span><span class="v">1</span></div>
+      </div>
+    </div>
+
+    <div>
+      <ul style="font-size:20px;">
+        <li><code>length</code> — cuántas letras tiene</li>
+        <li><code>square</code> — esas letras <strong>al cuadrado</strong></li>
+        <li><code>count</code> — siempre <code>1</code>, para ir contando palabras</li>
+      </ul>
+      <p class="stamp fragment" style="margin-top:34px; max-width:none;">
+        ¿Y para qué quiere el cuadrado?<br>
+        Esa es la parte bonita. Aguanten dos diapositivas.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= 7 -->
+<section class="sheet--top">
+  <h2 style="margin-bottom:18px;">El recorrido completo</h2>
+  <p class="dim" style="margin-bottom:26px; font-size:19px;">Con una línea de cuatro palabras, para que se vea entero.</p>
+
+  <div class="flow">
+    <div class="flow-row">
+      <div class="flow-label">Entrada</div>
+      <div class="flow-body"><code class="big">el dato es el</code></div>
+    </div>
+
+    <div class="flow-arrow fragment fade-in">↓</div>
+
+    <div class="flow-row fragment fade-in">
+      <div class="flow-label">Map</div>
+      <div class="flow-body">
+        el<span class="d">(2)</span> &nbsp;&nbsp;&rarr; (length,&nbsp;2) (square,&nbsp;&nbsp;4) (count,&nbsp;1)<br>
+        dato<span class="d">(4)</span> &rarr; (length,&nbsp;4) (square,&nbsp;16) (count,&nbsp;1)<br>
+        es<span class="d">(2)</span> &nbsp;&nbsp;&rarr; (length,&nbsp;2) (square,&nbsp;&nbsp;4) (count,&nbsp;1)<br>
+        el<span class="d">(2)</span> &nbsp;&nbsp;&rarr; (length,&nbsp;2) (square,&nbsp;&nbsp;4) (count,&nbsp;1)
+      </div>
+    </div>
+
+    <div class="flow-arrow fragment fade-in">↓</div>
+
+    <div class="flow-row fragment fade-in">
+      <div class="flow-label">Shuffle</div>
+      <div class="flow-body">
+        count &nbsp;&rarr; [1,&nbsp;1,&nbsp;1,&nbsp;1]<br>
+        length &rarr; [2,&nbsp;4,&nbsp;2,&nbsp;2]<br>
+        square &rarr; [4,&nbsp;16,&nbsp;4,&nbsp;4]
+        <span class="d" style="margin-left:26px;">solo tres claves, siempre</span>
+      </div>
+    </div>
+
+    <div class="flow-arrow fragment fade-in">↓</div>
+
+    <div class="flow-row fragment fade-in">
+      <div class="flow-label">Reduce</div>
+      <div class="flow-body">
+        suma cada lista &nbsp;&rarr;&nbsp; <strong>count 4</strong> &nbsp;&nbsp; <strong>length 10</strong> &nbsp;&nbsp; <strong>square 28</strong>
+      </div>
+    </div>
+  </div>
+
+  <p class="fragment" style="margin-top:28px; max-width:none; font-size:20px;">
+    Y aquí <strong>se acaba</strong> el trabajo de MapReduce. Tres números escritos en <code>part-r-00000</code>.
+  </p>
+
+  <aside class="notes">El mismo Reducer se usa también como combiner: va pre-sumando dentro de cada tarea map para mandar menos datos por la red.</aside>
+</section>
+
+<!-- ============================================================= 8 -->
+<section>
+  <h2>MapReduce nunca calculó la desviación</h2>
+
+  <div class="two two--wide" style="align-items:start; margin-top:6px;">
+    <div>
+      <p>El job terminó con tres sumas. Después, ya cerrado el trabajo, el programa <strong>vuelve a abrir</strong> <code>part-r-00000</code>, lee los tres números y hace la división y la raíz él solito.</p>
+
+      <div style="font-family:var(--mono); font-size:19px; line-height:1.9; margin-top:28px; border-left:4px solid var(--ink-2); padding-left:20px;">
+        media&nbsp;&nbsp;= 10 / 4 = 2.5<br>
+        var&nbsp;&nbsp;&nbsp;&nbsp;= 28/4 &minus; 2.5<sup>2</sup> = 0.75<br>
+        stddev = &radic;0.75 = <strong>0.8660254…</strong>
+      </div>
+
+      <p style="margin-top:28px;"><strong>¿Por qué así?</strong> Una suma se puede partir entre mil máquinas y juntar después. Una raíz cuadrada sobre un total global, no. Y tampoco hace falta: es una sola operación sobre tres numeritos.</p>
+    </div>
+
+    <div class="split-rule">
+      <h3 style="margin-bottom:18px;">Por eso el cuadrado</h3>
+      <p class="dim" style="font-size:20px;">Por una identidad de estadística:</p>
+      <div style="font-family:var(--mono); font-size:21px; padding:18px 20px; background:var(--bar); margin:16px 0 22px 0;">
+        Var(X) = E[X<sup>2</sup>] &minus; (E[X])<sup>2</sup>
+      </div>
+      <p class="dim" style="font-size:20px;">Guardando la suma de longitudes y la suma de longitudes al cuadrado, se reconstruye la varianza <strong>sin volver a leer el texto</strong>. Por eso el Mapper carga el cuadrado desde el principio.</p>
+      <p class="stamp" style="margin-top:24px; font-size:17px;">Ojo: divide entre n, no entre n&minus;1.<br>Es la desviación poblacional.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= 9 -->
+<section>
+  <h2>Compruébenlo a mano</h2>
+
+  <div class="two two--wide" style="align-items:start;">
+    <div>
+      <p class="dim" style="font-size:19px; margin-bottom:12px;">datos/mini.txt — 16 palabras, sin puntuación a propósito</p>
+      <pre><code class="language-text">el dato es el nuevo petroleo
+los datos crudos no sirven
+hay que limpiar los datos</code></pre>
+
+      <p class="dim" style="font-size:19px; margin:26px 0 12px 0;">part-r-00000</p>
+      <div class="print">
+        <div class="row"><span class="k">count</span><span class="v">16</span></div>
+        <div class="row"><span class="k">length</span><span class="v">66</span></div>
+        <div class="row"><span class="k">square</span><span class="v">328</span></div>
+      </div>
+    </div>
+
+    <div class="split-rule">
+      <div style="font-family:var(--mono); font-size:19px; line-height:2;">
+        media&nbsp;&nbsp;= 66 / 16<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= 4.125<br><br>
+        var&nbsp;&nbsp;&nbsp;&nbsp;= 328/16 &minus; 4.125<sup>2</sup><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= 20.5 &minus; 17.015625<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= 3.484375
+      </div>
+
+      <div style="margin-top:30px; border-top:1px solid var(--rule); padding-top:22px;">
+        <div class="dim" style="font-size:18px; margin-bottom:8px;">lo que imprime Hadoop</div>
+        <div style="font-family:var(--mono); font-size:21px; font-weight:600;">
+          The standard deviation is:<br>1.8666480653835098
+        </div>
+      </div>
+
+      <div style="margin-top:26px;"><span class="stamp-box">Cuadra</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 10 -->
+<section>
+  <h2>multifilewc es wordcount. Literal.</h2>
+  <p class="dim" style="margin-bottom:30px;">Mismo Mapper, mismo Reducer, misma salida. Lo comprobamos con <code>diff</code>.</p>
+
+  <div class="cmp">
+    <div class="r hd"><div></div><div>wordcount</div><div>multifilewc</div></div>
+    <div class="r r--bar"><div class="lbl">Mapper</div><div>palabra &rarr; 1</div><div>palabra &rarr; 1</div></div>
+    <div class="r"><div class="lbl">Reducer</div><div>IntSumReducer</div><div>IntSumReducer</div></div>
+    <div class="r r--bar"><div class="lbl">Salida</div><div>74 palabras</div><div>74 palabras</div></div>
+    <div class="r r--hit"><div class="lbl">InputFormat</div><div>TextInputFormat</div><div>CombineFileInputFormat</div></div>
+  </div>
+
+  <p class="fragment" style="margin-top:44px; max-width:none;">
+    Un solo renglón distinto. Y ese renglón <strong>no cambia qué se calcula</strong>, cambia <strong>cómo se reparte el trabajo</strong>.
+  </p>
+</section>
+
+<!-- ============================================================ 11 -->
+<section>
+  <h2>Lo que pasa antes del Map</h2>
+
+  <div class="two two--wide" style="align-items:start;">
+    <div>
+      <p>El InputFormat es la parte de Hadoop que decide <strong>cómo se parte la entrada en unidades de trabajo</strong>. A cada unidad se le llama <em>split</em>, y vale la regla:</p>
+
+      <div style="font-family:var(--cond); font-weight:700; font-size:30px; padding:20px 24px; background:var(--bar); margin:24px 0;">
+        un split = una tarea map
+      </div>
+
+      <ul style="font-size:20px; margin-top:26px;">
+        <li><code>TextInputFormat</code> hace <strong>mínimo un split por archivo</strong>.</li>
+        <li><code>CombineFileInputFormat</code> <strong>mete varios archivos chicos en un solo split</strong>.</li>
+      </ul>
+    </div>
+
+    <div class="split-rule">
+      <p class="dim" style="font-size:19px; margin-bottom:12px;">La única línea que cambia en el ejemplo</p>
+      <pre><code class="language-java">job.setInputFormatClass(
+    MyInputFormat.class);</code></pre>
+      <p class="dim" style="font-size:18px; margin-top:4px;">donde <code>MyInputFormat</code> hereda de <code>CombineFileInputFormat</code>.</p>
+
+      <div style="margin-top:30px; border-top:1px solid var(--rule); padding-top:22px;">
+        <h3 style="font-size:23px; margin-bottom:12px;">Detalle fino</h3>
+        <p class="dim" style="font-size:19px;">La clave que recibe el Mapper ya no es el desplazamiento en bytes, como en <code>wordcount</code>. Es un <code>WordOffset</code>: <strong>nombre de archivo + posición</strong>. Como el split ahora mezcla varios archivos, hay que saber de cuál venía cada línea.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 12 -->
+<section>
+  <h2>Sesenta sobres, o una caja</h2>
+  <p class="dim" style="margin-bottom:34px;">Los mismos 60 archivos de nuestra demo, repartidos de las dos maneras.</p>
+
+  <div class="two" style="gap:72px; align-items:start;">
+    <div>
+      <div class="files">
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+        <div class="file"></div>
+      </div>
+      <div class="crate-label">
+        <strong>wordcount</strong><br>
+        <span class="dim">60 splits &rarr; 60 tareas map</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="crate">
+        <div class="files">
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+          <div class="file"></div>
+        </div>
+      </div>
+      <div class="crate-label">
+        <strong>multifilewc</strong><br>
+        <span class="dim">1 split &rarr; 1 tarea map</span>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top:40px; max-width:none;">Las mismas hojas y el mismo destino. Lo que cambia es cuántas veces pagas el envío.</p>
+</section>
+
+<!-- ============================================================ 13 -->
+<section>
+  <h2>El problema de los archivos pequeños</h2>
+
+  <p class="lead dim" style="margin-bottom:30px;">Pasa todo el tiempo: logs con un archivo por hora por servidor, lecturas de sensores, exportaciones de APIs.</p>
+
+  <div class="bignum">
+    <div>
+      <div class="bignum-v">100 MB</div>
+      <div class="bignum-k">50 000 archivos de 2 KB</div>
+    </div>
+    <div class="bignum-op">&rarr;</div>
+    <div>
+      <div class="bignum-v" style="color:var(--stamp);">50 000</div>
+      <div class="bignum-k">tareas map con <code>wordcount</code></div>
+    </div>
+  </div>
+
+  <p style="margin-top:34px; max-width:none;"><strong>El costo no está en los datos, está en las tareas.</strong></p>
+  <ul style="font-size:19px; margin-top:16px;">
+    <li>Cada tarea arranca su propia JVM: segundos en levantarla, milisegundos en procesar 2 KB.</li>
+    <li>El ApplicationMaster tiene que pedir, agendar y vigilar 50 000 contenedores.</li>
+    <li>En HDFS cada archivo ocupa memoria del NameNode, pese lo que pese.</li>
+  </ul>
+
+  <p class="stamp" style="margin-top:26px; max-width:none;">Con splits de 128 MB: de 50 000 tareas a 1.</p>
+</section>
+
+<!-- ============================================================ 14 -->
+<section class="sheet--top">
+  <h2 style="margin-bottom:10px;">Demo en vivo</h2>
+  <p class="dim" style="font-size:19px; margin-bottom:26px;">Todo dentro del contenedor, como usuario <code>hadoop</code>. Las rutas completas están en el README.</p>
+
+  <div class="two" style="gap:52px;">
+    <div>
+      <div class="term">Parte A &mdash; la desviación</div>
+      <pre class="pre--sm"><code class="language-bash">hadoop jar $JAR wordstandarddeviation \
+  datos/mini.txt \
+  salida-stddev-mini
+
+cat salida-stddev-mini/part-r-00000</code></pre>
+      <div class="print" style="margin-top:14px; font-size:19px;">
+        <div class="row"><span class="k">count</span><span class="v">16</span></div>
+        <div class="row"><span class="k">length</span><span class="v">66</span></div>
+        <div class="row"><span class="k">square</span><span class="v">328</span></div>
+      </div>
+    </div>
+
+    <div class="split-rule">
+      <div class="term">Parte B &mdash; la comparación</div>
+      <pre class="pre--sm"><code class="language-bash">scripts/generar_muchos_archivos.sh 60
+
+hadoop jar $JAR wordcount \
+  datos/muchos salida-wc 2>&amp;1 | tee wc.log
+
+hadoop jar $JAR multifilewc \
+  datos/muchos salida-mfwc 2>&amp;1 | tee mfwc.log
+
+grep 'number of splits' wc.log mfwc.log</code></pre>
+      <p class="dim" style="font-size:18px; margin-top:12px;">Un atajo: <code>scripts/ejecutar.sh</code> corre todo de un jalón.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 15 -->
+<section>
+  <h2>El momento de la verdad</h2>
+  <p class="dim" style="margin-bottom:32px;">Los mismos 60 archivos, los mismos 240 KB, los dos ejemplos.</p>
+
+  <div class="print print--lg" style="min-width:620px;">
+    <div class="row"><span class="k">wordcount</span><span class="v">number of splits: 60</span></div>
+    <div class="row"><span class="k">multifilewc</span><span class="v">number of splits: 1</span></div>
+  </div>
+
+  <div style="margin-top:34px; font-family:var(--mono); font-size:19px;">
+    <span class="dim">diff salida-wc/part-r-00000 salida-mfwc/part-r-00000</span><br>
+    <span style="font-weight:600; font-size:24px;">IDÉNTICOS</span>
+  </div>
+
+  <p class="fragment" style="margin-top:40px; max-width:none; font-size:26px;">
+    Mismo resultado. <strong>Sesenta veces menos tareas.</strong>
+  </p>
+</section>
+
+<!-- ============================================================ 16 -->
+<section class="sheet--top">
+  <h2 style="margin-bottom:22px;">Su turno</h2>
+
+  <div class="two two--wide" style="gap:52px; align-items:start;">
+    <div>
+      <p class="dim" style="font-size:19px; margin-bottom:12px;">datos/frase.txt</p>
+      <div style="font-family:var(--mono); font-size:24px; background:var(--bar); padding:14px 20px; margin-bottom:22px;">big data no es solo mucho dato</div>
+      <p style="font-size:20px;">Llenen <code>count</code>, <code>length</code> y <code>square</code> a mano, saquen la desviación, y después córranlo en Hadoop para ver si les cuadra.</p>
+      <div class="print" style="margin-top:18px; font-size:19px;">
+        <div class="row"><span class="k">count</span><span class="v" style="color:var(--ink-3);">?</span></div>
+        <div class="row"><span class="k">length</span><span class="v" style="color:var(--ink-3);">?</span></div>
+        <div class="row"><span class="k">square</span><span class="v" style="color:var(--ink-3);">?</span></div>
+      </div>
+    </div>
+
+    <div class="split-rule">
+      <ul style="font-size:19px;">
+        <li>¿Por qué la salida tiene <strong>tres renglones</strong> aunque el texto crezca? ¿Y quién calcula la raíz cuadrada?</li>
+        <li>Generen <strong>30</strong> archivos y cuenten los splits de cada ejemplo. ¿Las salidas son iguales?</li>
+        <li>Si tuvieran <strong>50 000</strong> archivos de 2 KB, ¿cuántas tareas map levantaría <code>wordcount</code>, y por qué es un problema?</li>
+        <li class="stamp">Reto: <code>multifilewc</code> juntó todo en un solo split. Con 50 000 archivos eso también estaría mal. ¿Qué propiedad le pondrían para limitar el tamaño del split?</li>
+      </ul>
+      <p class="dim" style="font-size:18px; margin-top:22px; border-top:1px solid var(--rule); padding-top:16px;">
+        Enunciado y solución en <code>ejercicio/</code> del repositorio.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 17 -->
+<section>
+  <div class="two two--wide" style="align-items:center;">
+    <div>
+      <h2 style="margin-bottom:28px;">Lo que se llevan</h2>
+      <ul style="font-size:21px;">
+        <li><strong>MapReduce solo sabe sumar.</strong> Todo lo que no sea repartible se hace afuera, al final, sobre los totales.</li>
+        <li><strong>Cómo se reparte el trabajo pesa tanto como qué se calcula.</strong> Un InputFormat distinto bajó 60 tareas a 1 sin tocar una línea del cálculo.</li>
+      </ul>
+
+      <div style="margin-top:42px; border-top:1px solid var(--rule); padding-top:22px; font-family:var(--mono); font-size:18px; line-height:1.7;">
+        github.com/JVeFloo/<br>bda-equipo-2-estadistica-de-palabras-ii
+      </div>
+    </div>
+
+    <div class="split-rule">
+      <div class="print print--lg">
+        <div class="row"><span class="k">count</span><span class="v">116</span></div>
+        <div class="row"><span class="k">length</span><span class="v">513</span></div>
+        <div class="row"><span class="k">square</span><span class="v">2883</span></div>
+      </div>
+      <div class="stamp" style="margin-top:22px; line-height:1.6;">
+        116 palabras.<br>
+        513 letras entre todas.<br>
+        Y el cuadrado, que es lo que<br>
+        deja reconstruir la varianza.<br>
+        <span style="color:var(--ink); font-weight:600;">&sigma; = 2.3012397785607734</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script src="vendor/reveal.min.js"></script>
+<script src="vendor/plugin/highlight/highlight.min.js"></script>
+<script src="vendor/plugin/notes/notes.min.js"></script>
+<script>
+Reveal.initialize({
+  width: 1280,
+  height: 720,
+  margin: 0,
+  center: false,
+  display: 'flex',
+  controls: false,
+  hash: true,
+  transition: 'fade',
+  transitionSpeed: 'fast',
+  backgroundTransition: 'none',
+  slideNumber: 'c/t',
+  pdfSeparateFragments: false,
+  pdfMaxPagesPerSlide: 1,
+  plugins: [ RevealHighlight, RevealNotes ]
+});
+</script>
+</body>
+</html>
